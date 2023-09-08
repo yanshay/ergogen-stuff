@@ -36,6 +36,7 @@ This footpring allows including the basic keys routing (and maybe more) into the
           route: "b(-5,3.8)(-5,9.325)(-3.275,11.05)" 
 
 ```
+![Routing Example](images/router_example.png)
 
 ## Supported Params
 ```
