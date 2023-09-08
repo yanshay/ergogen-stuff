@@ -1,0 +1,168 @@
+// Router
+// Version: 0.1
+
+// Snippets of code used here were taken from https://github.com/infused-kim/kb_ergogen_fp (adjust_oint)
+// Credits goes to Github infused-kim, Thanks!
+
+module.exports = {
+  params: {
+    net: { type: "net", value: undefined },
+    width: { type: "number", value: 0.25 },
+    route: { type: "string", value: "" },
+    routes: { type: "array", value: [] },
+    via_size: { type: "number", value: 0.8 },
+    via_drill: { type: "number", value: 0.4 },
+  },
+
+  body: (p) => {
+    const get_at_coordinates = () => {
+      const pattern = /\(at (-?[\d\.]*) (-?[\d\.]*) (-?[\d\.]*)\)/
+      const matches = p.at.match(pattern)
+      if (matches && matches.length == 4) {
+        return [
+          parseFloat(matches[1]),
+          parseFloat(matches[2]),
+          parseFloat(matches[3]),
+        ]
+      } else {
+        return null
+      }
+    }
+
+    const adjust_point = (x, y) => {
+      const at_l = get_at_coordinates()
+      if (at_l == null) {
+        throw new Error(`Could not get x and y coordinates from p.at: ${p.at}`)
+      }
+      const at_x = at_l[0]
+      const at_y = at_l[1]
+      const at_angle = at_l[2]
+      const adj_x = at_x + x
+      const adj_y = at_y + y
+
+      const radians = (Math.PI / 180) * at_angle,
+        cos = Math.cos(radians),
+        sin = Math.sin(radians),
+        nx = cos * (adj_x - at_x) + sin * (adj_y - at_y) + at_x,
+        ny = cos * (adj_y - at_y) - sin * (adj_x - at_x) + at_y
+
+      const point_str = `${nx.toFixed(2)} ${ny.toFixed(2)}`
+      return point_str
+    }
+
+    // (segment (start 108.8 108) (end 109.7 108) (width 0.2) (layer "F.Cu") (net 0))
+    const get_segment = (start, end, layer, net) => {
+      if (!layer) {
+        throw new Error(
+          "Can't place segment before layer is set, use 'f' or 'b', to set starting layer"
+        )
+      }
+      return `(segment (start ${adjust_point(
+        start[0],
+        start[1]
+      )}) (end ${adjust_point(end[0], end[1])}) (width ${
+        p.width
+      }) (layer ${layer}) (net ${net}))`
+    }
+
+    // (via (at 108.8 108) (size 0.8) (drill 0.4) (layers "F.Cu" "B.Cu") (net 0))
+    const get_via = (pos, net) => {
+      if (!pos) {
+        throw new Error(
+          "Can't place via when position is not set, use (x,y) to set position"
+        )
+      }
+      return `(via (at ${adjust_point(pos[0], pos[1])}) (size ${
+        p.viasize
+      }) (drill ${p.viadrill}) (layers "F.Cu" "B.Cu") (net ${p.net.index}))`
+    }
+
+    const parse_tuple = (t) => {
+      let str_tuple = JSON.parse(t.replace(/\(/g, "[").replace(/\)/g, "]"))
+      let num_tuple = str_tuple.map((v) => Number(v))
+      if (isNaN(num_tuple[0] || isNaN(num_tuple[1]))) {
+        throw new Error(`Invalid position encountered: ${str_tuple}`)
+      }
+      return num_tuple
+    }
+
+    const get_traces = (route, net) => {
+      let traces = ""
+      let layer = undefined
+      let start = undefined // [x, y]
+
+      for (let i = 0; i < route.length; i++) {
+        ch = route[i].toLowerCase()
+        switch (ch) {
+          case "f":
+            layer = "F.Cu"
+            break
+          case "b":
+            layer = "B.Cu"
+            break
+          case "v":
+            traces = traces + get_via(start, net) + "\n"
+            switch (layer) {
+              case "F.Cu":
+                layer = "B.Cu"
+                break
+              case "B.Cu":
+                layer = "F.Cu"
+                break
+              default:
+                throw new Error(
+                  "Can't place via before layer is set, use 'f' or 'b', to set starting layer."
+                )
+            }
+            break
+          case "(":
+            let tuple_str = "("
+            let parenthesis_idx = i
+            for (i = i + 1; i < route.length; i++) {
+              let ch = route[i]
+              tuple_str += ch
+              if (route[i] == ")") {
+                break
+              }
+              if (i > route.length) {
+                throw new Error(
+                  `Unclosed position parenthesis in ${route} at character position ${parenthesis_idx}`
+                )
+              }
+            }
+            let pos = parse_tuple(tuple_str)
+            if (start) {
+              traces = traces + get_segment(start, pos, layer, net) + "\n"
+            }
+            start = pos
+            break
+          case "x":
+          case "|":
+            start = undefined
+            break
+          default:
+            throw new Error(`Unsupported character '${ch}' at position ${i}.`)
+        }
+      }
+
+      return traces
+    }
+
+    const get_routes_traces = (routes, net) => {
+      let routes_traces = routes.reduce((acc_traces, route) => {
+        return acc_traces + get_traces(route, net)
+      }, "")
+      return routes_traces
+    }
+
+    let combined_traces = ""
+    if (p.route) {
+      combined_traces += get_traces(p.route, p.net.index)
+    }
+    if (p.routes) {
+      combined_traces += get_routes_traces(p.routes, p.net.index)
+    }
+
+    return combined_traces
+  },
+}
