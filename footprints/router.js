@@ -1,5 +1,6 @@
 // Router
 // Version: 0.1
+// Compativle with ergogen v4.04
 
 // Snippets of code used here were taken from https://github.com/infused-kim/kb_ergogen_fp (adjust_oint)
 // Credits goes to Github infused-kim, Thanks!
