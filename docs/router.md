@@ -41,7 +41,7 @@ This footpring allows including the basic keys routing (and maybe more) into the
 ## Supported Params
 ```
   params: {
-    net: { type: "net", value: undefined },
+    net: { type: "net", value: "" },
     width: { type: "number", value: 0.25 },
     route: { type: "string", value: "" },
     routes: { type: "array", value: [] },
@@ -50,7 +50,8 @@ This footpring allows including the basic keys routing (and maybe more) into the
   }
 ```
 
-- `net`, `width`, `via_size`, `via_drill` - self explanatory
+- `width`, `via_size`, `via_drill` - self explanatory - optional with default keycad 7.0 values
+- net - allows specifying a net for all routes in this footprint, which is limiting because for several routes of different networks that wou mean several router footprints. However, if 'no net' is supplied (default if net param not specified) then KiCad will fill in those missing nets when file is opened. 
 - `routes` - an array of routes based on the syntax described below, each stands by its own except they all share other params (net, ...)
 - `route` - allows adding a single route using same syntax, but on a single row in a more concise format and probably the common case
 
