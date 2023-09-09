@@ -7,7 +7,7 @@
 
 module.exports = {
   params: {
-    net: { type: "net", value: undefined },
+    net: { type: "net", value: "" },
     width: { type: "number", value: 0.25 },
     route: { type: "string", value: "" },
     routes: { type: "array", value: [] },
