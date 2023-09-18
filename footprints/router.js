@@ -1,6 +1,5 @@
 // Router
 // Version: 0.1
-// Compativle with ergogen v4.04
 
 // Snippets of code used here were taken from https://github.com/infused-kim/kb_ergogen_fp (adjust_oint)
 // Credits goes to Github infused-kim, Thanks!
@@ -137,6 +136,22 @@ module.exports = {
             }
             start = pos
             break
+          case "<":
+            let net_name = ""
+            let lt_idx = i
+            for (i = i + 1; i < route.length; i++) {
+              let ch = route[i]
+              if (route[i] == ">") {
+                break
+              }
+              net_name += ch
+              if (i > route.length) {
+                throw new Error(
+                  `Unclosed net parenthesis in ${route} at character position ${lt_idx}`
+                )
+              }
+            }
+            net = p.global_net(net_name)
           case "x":
           case "|":
             start = undefined
