@@ -8,3 +8,5 @@ For more information:
 
 - [Router footprint](docs/router.md)
 - [ErgoGen KiCad Plugin](docs/ergogen_kicad_plugin.md)
+
+![Plugin Usage Example](docs/images/ergogen_kicad_plugin_example.png)
