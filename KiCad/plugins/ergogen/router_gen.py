@@ -218,7 +218,7 @@ class RouterGen:
                     return
                 if curr_route != "":
                     logger.debug(curr_route)
-                    routes.append(f'"{curr_route}"{"" if place_nets or curr_net_name is None else ("  # net: " + curr_net_name)}')
+                    routes.append(f'"{curr_route}"{"" if place_nets or curr_net_name is None else ("  # net: " + str(get_mapped_net(curr_net_name)))}')
                     curr_route = ""
                 curr_net_name = None
                 curr_pos = None
@@ -250,13 +250,20 @@ class RouterGen:
                 curr_route += layer
                 curr_layer = layer
 
+            def get_mapped_net(net_name:str) -> Union[str, None]:
+                if net_name in nets_map.keys():
+                    net_name = nets_map[net_name]
+                return net_name
+
+
             def route_set_net_cmd(net_name: str):
                 nonlocal curr_route
                 nonlocal curr_net_name
                 logger.debug(str(nets_map))
-                net_name_cmd = net_name
-                if net_name in nets_map.keys():
-                    net_name_cmd = nets_map[net_name]
+                # net_name_cmd = net_name
+                # if net_name in nets_map.keys():
+                #     net_name_cmd = nets_map[net_name]
+                net_name_cmd = get_mapped_net(net_name)
                 logger.debug(f'Creating new Net {curr_net_name}->{net_name}')
                 if net_name != '' and place_nets:
                     curr_route += f'<!{net_name_cmd}>'
