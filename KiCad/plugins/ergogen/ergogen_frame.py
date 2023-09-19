@@ -108,7 +108,7 @@ class ErgogenFrame(wx.Frame):
         route_spec_sz.AddSpacer(5)
 
         self.place_nets = wx.CheckBox(sb, label="Place network names (disable with unpatched ErgoGen at this time)")
-        self.place_nets.SetValue(True)
+        self.place_nets.SetValue(False)
         route_spec_sz.Add(self.place_nets, flag=wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
 
