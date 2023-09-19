@@ -1,6 +1,8 @@
 import logging
 import os
+import pathlib
 
+print(pathlib.Path(__file__).parent.resolve().parent.resolve())
 
 def get_logger(logger_name):
     logger = logging.getLogger(logger_name)
@@ -8,8 +10,8 @@ def get_logger(logger_name):
 
     logger.handlers.clear()  # important within kiCad to avoid duplicate logs
 
-    home_directory = os.path.expanduser('~')
-    path = os.path.join(home_directory, 'Documents', 'KiCad', '7.0', 'scripting', 'plugins', 'ergogen.log')
+    path = pathlib.Path(__file__).parent.resolve().joinpath('ergogen.log')
+    
     fh = logging.FileHandler(path)  # goes to /Applications/KiCad/ergogen.log on Mac
 
     # fh.setLevel(logging.INFO)
