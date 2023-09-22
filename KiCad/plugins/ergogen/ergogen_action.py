@@ -1,6 +1,7 @@
 import pcbnew
 from typing import Union
 import wx
+import os
 
 from .ergogen_frame import ErgogenFrame
 
@@ -15,9 +16,8 @@ class ErgogenPluginAction(pcbnew.ActionPlugin):
         self.name = "Ergogen - Ergonomic Keyboard Generator KiCad Plugin"
         self.category = "A descriptive category name"
         self.description = "Extracts routes for use in ErgoGen config file"
-        self.show_toolbar_button = False  # Optional, defaults to False
-        # self.icon_file_name = os.path.join(os.path.dirname(
-        #     __file__), 'simple_plugin.png')  # Optional, defaults to ""
+        self.show_toolbar_button = True  # Optional, defaults to False
+        self.icon_file_name = os.path.join(os.path.dirname(__file__), 'ergogen_plugin_icon.png')  # Optional, defaults to ""
 
     def Run(self):
         if self.window is None:
