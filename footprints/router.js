@@ -37,16 +37,14 @@ module.exports = {
       const at_x = at_l[0]
       const at_y = at_l[1]
       const at_angle = at_l[2]
-      const adj_x = at_x + x
-      const adj_y = at_y + y
 
       const radians = (Math.PI / 180) * at_angle,
         cos = Math.cos(radians),
         sin = Math.sin(radians),
-        nx = cos * (adj_x - at_x) + sin * (adj_y - at_y) + at_x,
-        ny = cos * (adj_y - at_y) - sin * (adj_x - at_x) + at_y
+        nx = cos * x + sin * y + at_x,
+        ny = cos * y - sin * x + at_y
 
-      const point_str = `${nx.toFixed(2)} ${ny.toFixed(2)}`
+      const point_str = `${nx.toFixed(5)/1} ${ny.toFixed(5)/1}` // the division by 1 is to remove trailing zeros
       return point_str
     }
 
@@ -73,8 +71,8 @@ module.exports = {
         )
       }
       return `(via (at ${adjust_point(pos[0], pos[1])}) (size ${
-        p.viasize
-      }) (drill ${p.viadrill}) (layers "F.Cu" "B.Cu") (net ${net}))`
+        p.via_size
+      }) (drill ${p.via_drill}) (layers "F.Cu" "B.Cu") (net ${net}))`
     }
 
     const parse_tuple = (t) => {
