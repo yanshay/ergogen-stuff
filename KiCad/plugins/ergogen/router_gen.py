@@ -258,7 +258,7 @@ class RouterGen:
                 curr_route += 'V'
                 if curr_layer == 'F':
                     curr_layer = 'B'
-                if curr_layer == 'B':
+                elif curr_layer == 'B':
                     curr_layer = 'F'
 
             # process_track(..) implementation
@@ -346,15 +346,15 @@ class RouterGen:
             connected_tracks = self.connectivity.GetConnectedTracks(track)
             connected_track: pcbnew.PCB_TRACK
 
-            # Processing all connected 'real' tracks, and only after 'vias' for nicer routes
-            for connected_track in connected_tracks:
-                track_type = connected_track.GetTypeDesc()
-                if track_type == 'Track':
-                    process_track(connected_track)
+            # Processing all connected 'cias' and only after that the real' tracks for shorter routes in some cases (when via is not connected on other layer)
             for connected_track in connected_tracks:
                 track_type = connected_track.GetTypeDesc()
                 if track_type == 'Via':
                     logger.debug("Calling process_track with via")
+                    process_track(connected_track)
+            for connected_track in connected_tracks:
+                track_type = connected_track.GetTypeDesc()
+                if track_type == 'Track':
                     process_track(connected_track)
 
             connected_pads = self.connectivity.GetConnectedPads(track)
