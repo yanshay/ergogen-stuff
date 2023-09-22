@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 
 print(pathlib.Path(__file__).parent.resolve().parent.resolve())
