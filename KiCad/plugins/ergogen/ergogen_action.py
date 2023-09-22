@@ -22,6 +22,8 @@ class ErgogenPluginAction(pcbnew.ActionPlugin):
     def Run(self):
         if self.window is None:
             self.init_window()
+        else:
+            self.window.Raise()
 
     def init_window(self):
         self.window = ErgogenFrame()
