@@ -26,8 +26,9 @@ class ErgogenFrame(wx.Frame):
     info_nets: wx.StaticText
     info_unsupported: wx.StaticText
 
-    use_selected_tracks: wx.CheckBox
-    use_selected_tracks: wx.CheckBox
+    collect_fp_tracks: wx.CheckBox
+    include_selected_tracks: wx.CheckBox
+    include_locked_tracks_vias: wx.CheckBox
     ref_fp: wx.ComboBox
     place_nets: wx.CheckBox
     nets_sz: wx.FlexGridSizer
@@ -51,7 +52,7 @@ class ErgogenFrame(wx.Frame):
 
         self.SetTitle("Ergogen Kicad Plugin")
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-        self.SetSize(600, 800)
+        self.SetSize(600, 900)
         self.panel = wx.Panel(self)
 
         self.main_sz = wx.BoxSizer(wx.VERTICAL)
@@ -96,8 +97,13 @@ class ErgogenFrame(wx.Frame):
         route_spec_sz.Add(self.collect_fp_tracks, flag=wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
 
-        self.use_selected_tracks = wx.CheckBox(sb, label="Include seleted tracks and vias")
-        route_spec_sz.Add(self.use_selected_tracks, flag=wx.LEFT, border=10)
+        self.include_selected_tracks = wx.CheckBox(sb, label="Include seleted tracks and vias")
+        route_spec_sz.Add(self.include_selected_tracks, flag=wx.LEFT, border=10)
+        route_spec_sz.AddSpacer(5)
+
+        self.include_locked_tracks_vias = wx.CheckBox(sb, label="Include locked tracks/vias")
+        self.include_locked_tracks_vias.SetValue(True)
+        route_spec_sz.Add(self.include_locked_tracks_vias, flag=wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
 
         combo_sz = wx.BoxSizer(wx.HORIZONTAL)
@@ -219,14 +225,15 @@ class ErgogenFrame(wx.Frame):
         self.ref_fp.Value = sel_analysis.default_fp
         if sel_analysis.tracks_count == 0 and sel_analysis.vias_count == 0 and sel_analysis.fp_count != 0:
             self.collect_fp_tracks.SetValue(True)
-            self.use_selected_tracks.SetValue(False)
+            self.include_selected_tracks.SetValue(False)
 
     def OnGenRoute(self, event):  # pyright: ignore
         router_gen = RouterGen()
         self.yaml_txt.SetValue(router_gen.get_selection_router_config(self.ref_fp.GetValue(),
                                                                       self.get_nets_map(),
                                                                       self.collect_fp_tracks.GetValue(),
-                                                                      self.use_selected_tracks.GetValue(),
+                                                                      self.include_selected_tracks.GetValue(),
+                                                                      self.include_locked_tracks_vias.GetValue(),
                                                                       self.place_nets.GetValue(),
                                                                       self.tab_size.GetValue(),
                                                                       self.fp_sec_name.GetValue(),

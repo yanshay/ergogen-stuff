@@ -1,6 +1,5 @@
 from typing import Union
 import pcbnew
-import wx
 from collections import defaultdict
 import decimal
 import math
@@ -87,7 +86,8 @@ class RouterGen:
 
 
     def get_selection_router_config(self, ref_fp_name: str, nets_map: dict[str, str], footprint_tracks: bool, selected_tracks_vias: bool,
-                                    place_nets:bool = True, tab_size: int = 2, fp_sec_name:str= "", filter:str = "true") -> str:
+                                    include_locked_tracks_vias:bool, 
+                                    place_nets:bool = True, tab_size: int = 2, fp_sec_name:str= "", where_filter:str = "true") -> str:
         logger.debug(f'get_selection_router_config with {footprint_tracks}, {selected_tracks_vias}')
         selected_items = pcbnew.GetCurrentSelection()
         footprints: list[pcbnew.FOOTPRINT] = []
@@ -117,35 +117,18 @@ class RouterGen:
                 elif item.GetTypeDesc() == 'Via':
                     all_vias[item.m_Uuid.AsString()] = item.Cast()
 
+        # Remove locked tracks/vias if needed
+        if not include_locked_tracks_vias:
+            all_tracks = {k: v for k,v in all_tracks.items() if not v.IsLocked() }
+            all_vias = {k: v for k,v in all_vias.items() if not v.IsLocked() }
+
         logger.debug(f'Found total tracks: {len(all_tracks)} and vias: {len(all_vias)}')
         if ref_fp is not None:
             routes = self.process_tracks(all_tracks, all_vias, ref_fp.GetX(), ref_fp.GetY(),
                                          ref_fp.GetOrientationDegrees(), place_nets, nets_map)
-            return self.get_routes_yaml(routes, tab_size, fp_sec_name, filter)
+            return self.get_routes_yaml(routes, tab_size, fp_sec_name, where_filter)
         else:
             return 'No response'
-
-    def get_selected_router_config(self) -> Union[list[str], None]:
-        selected_items = pcbnew.GetCurrentSelection()
-        footprints: list[pcbnew.FOOTPRINT] = []
-        largest_area = 0
-        largest_footprint: Union[pcbnew.FOOTPRINT, None] = None
-        for item in selected_items:
-            if item.GetTypeDesc() == 'Footprint':
-                logger.debug(f'Footprint Selected: {item.GetReferenceAsString()}')
-                footprints.append(item.Cast())
-                if item.GetArea() > largest_area:
-                    largest_area = item.GetArea()
-                    largest_footprint = item
-        if len(footprints) == 0:
-            wx.MessageBox("No footprints in selection")
-            return
-
-        all_tracks, all_vias = self.get_footprints_tracks(footprints)
-        logger.debug(f'Found total tracks: {len(all_tracks)} and vias: {len(all_vias)}')
-        if largest_footprint:
-            return self.process_tracks(all_tracks, all_vias, largest_footprint.GetX(), largest_footprint.GetY(),
-                                       largest_footprint.GetOrientationDegrees())
 
 ##################################################################
 
