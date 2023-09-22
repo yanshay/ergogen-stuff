@@ -74,7 +74,7 @@ module.exports = {
       }
       return `(via (at ${adjust_point(pos[0], pos[1])}) (size ${
         p.viasize
-      }) (drill ${p.viadrill}) (layers "F.Cu" "B.Cu") (net ${p.net.index}))`
+      }) (drill ${p.viadrill}) (layers "F.Cu" "B.Cu") (net ${net}))`
     }
 
     const parse_tuple = (t) => {
@@ -109,10 +109,6 @@ module.exports = {
               case "B.Cu":
                 layer = "F.Cu"
                 break
-              default:
-                throw new Error(
-                  "Can't place via before layer is set, use 'f' or 'b', to set starting layer."
-                )
             }
             break
           case "(":
