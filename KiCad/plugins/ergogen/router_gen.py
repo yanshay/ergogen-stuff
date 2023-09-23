@@ -304,19 +304,15 @@ class RouterGen:
                 via_pos = (via.GetX(), via.GetY())
                 via_net_name = via.GetNetname()
 
-                #TODO: organize same as track, first check if need to start a new route for various reasons, then apply the commands. The way done here may be wrong
-
                 if via_net_name != curr_net_name:
-                    # logger.debug(f'Starting new route because via net name {via_net_name} != curr_net_name {curr_net_name}')
-                    # No need to start a new route in case of net change because nets don't change along the way (I think)
-                    # If this will be required need to look at this carefully, because when it took place here it caused buts on some scenarios
-                    # Same goes for track netname change below
+                    logger.debug(f'Starting new route because via net name {via_net_name} != curr_net_name {curr_net_name}')
+                    start_new_route()
                     route_set_net_cmd(via_net_name)
-
-                if via_pos != curr_pos:
+                if via_pos != curr_pos: # Here should be an accurate test, not approximate since it is about placing position command
                     logger.debug(f'Starting new route because via position {via_pos} != curr_net_name {curr_pos}')
                     start_new_route()
                     route_set_pos_cmd(via_pos)
+
                 route_place_via_cmd()
 
                 via_connected_tracks = self.connectivity.GetConnectedTracks(via)
