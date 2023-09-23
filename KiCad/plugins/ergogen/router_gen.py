@@ -176,8 +176,19 @@ class RouterGen:
             return tracks_by_pos
 
         def end_is_connected(x: int, y: int) -> bool:
-            # currently doing exact match, but maybe need some tolerance
+            # currently doing exact match, but maybe need some tolerance, see pos_on_track_end for functions to use
             return len(tracks_by_pos[(x, y)]) > 1
+
+        def pos_on_track_end(pos: tuple[int, int], track: pcbnew.PCB_TRACK):
+            # First option for this test, but does only exact match w/o any tolerance
+            # return ((track.GetX() == pos[0] and track.GetY() == pos[1]) or (track.GetEndX() == pos[0] and track.GetEndY() == pos[1]))
+            v = pcbnew.VECTOR2I(pos[0], pos[1]) 
+            # return track.HitTest(v) # Second option - this may fail if point is on the middle of track, will also return true
+            return ((track.IsPointOnEnds(v) & (pcbnew.STARTPOINT | pcbnew.ENDPOINT)) != 0) # Seems to be the best option
+            # Other relevant functions in case needed in the future:
+            # self.connectivity.GetConnectedItemsAtAnchor, # doesn't work - kicad bug
+            # self.connectivity.TestTrackEndpointDangling
+            # self.connectivity.TestTrackEndpointDangling
 
         def get_starter_tracks() -> dict[str, pcbnew.PCB_TRACK]:
 
@@ -191,18 +202,18 @@ class RouterGen:
             return starter_tracks
 
 
-        def process_track(track: Union[pcbnew.PCB_TRACK, None]): # -> Union[list[str], None]:
+        def process_track(track: Union[pcbnew.PCB_TRACK, None], try_to_start_from: Union[tuple[int, int], None] = None): # -> Union[list[str], None]:
 
             def start_new_route():
                 nonlocal started_new_route
                 nonlocal curr_net_name, curr_pos, curr_route, curr_layer, curr_pos
-                logger.debug("Starting new route")
                 if started_new_route:
                     return
                 if curr_route != "":
-                    logger.debug(curr_route)
+                    logger.debug(f'Completed a route: {curr_route}')
                     routes.append(f'"{curr_route}"{"" if place_nets or curr_net_name is None else ("  # net: " + str(get_mapped_net(curr_net_name)))}')
                     curr_route = ""
+                logger.debug("------------------------------------------ Starting new route ----------------------------------------------------------------")
                 curr_net_name = None
                 curr_pos = None
                 curr_layer = None
@@ -238,7 +249,6 @@ class RouterGen:
                     net_name = nets_map[net_name]
                 return net_name
 
-
             def route_set_net_cmd(net_name: str):
                 nonlocal curr_route
                 nonlocal curr_net_name
@@ -269,10 +279,13 @@ class RouterGen:
             nonlocal curr_layer
             started_new_route = False
 
+            # This is used to flush the current route into the routes list
             if track is None:
                 start_new_route()
                 return []
 
+            # First verify this track or via are/were not already in-process/processed
+            # Note that once we set them as processed as we enter, not waiting for processing completion
             track_uuid = track.m_Uuid.AsString()
             if track_uuid not in tracks_by_uuid and track_uuid not in vias_by_uuid:
                 return
@@ -280,32 +293,49 @@ class RouterGen:
                 return
 
             track_type = track.GetTypeDesc()
+
+            # Processing of Via type
             if track_type == 'Via':
                 via = track  # rename for clarity
-                logger.debug("Processing via")
+                # Mark as processed immediately, in case mid processing we recurse
+                processed_vias[via.m_Uuid.AsString()] = via
+
+                log_track(track, "Processing Via: ")
                 via_pos = (via.GetX(), via.GetY())
                 via_net_name = via.GetNetname()
+
+                #TODO: organize same as track, first check if need to start a new route for various reasons, then apply the commands. The way done here may be wrong
+
                 if via_net_name != curr_net_name:
-                    start_new_route()
+                    # logger.debug(f'Starting new route because via net name {via_net_name} != curr_net_name {curr_net_name}')
+                    # No need to start a new route in case of net change because nets don't change along the way (I think)
+                    # If this will be required need to look at this carefully, because when it took place here it caused buts on some scenarios
+                    # Same goes for track netname change below
                     route_set_net_cmd(via_net_name)
+
                 if via_pos != curr_pos:
+                    logger.debug(f'Starting new route because via position {via_pos} != curr_net_name {curr_pos}')
                     start_new_route()
                     route_set_pos_cmd(via_pos)
                 route_place_via_cmd()
-                processed_vias[via.m_Uuid.AsString()] = via
 
                 via_connected_tracks = self.connectivity.GetConnectedTracks(via)
                 logger.debug(f'Via is conntected to {via_connected_tracks.size()} tracks')
                 via_connected_track: pcbnew.PCB_TRACK
                 for via_connected_track in via_connected_tracks:
                     log_track(via_connected_track, "Via processing ")
-                    process_track(via_connected_track)
+                    process_track(via_connected_track, via_pos)
 
-                return
+                return # Done handling the via case
+            
+            # Start handling the Track case
 
             assert track_type == 'Track', f'PCB(Track) Items of type {track_type} are not supported'
 
-            log_track(track, "Processing Track! ")
+            processed_tracks[track_uuid] = track # mark it already as processed in case of recursion through via
+
+            log_track(track, "Processing Track: ")
+
             connected_tracks = self.connectivity.GetConnectedTracks(track)
             for connected_track in connected_tracks:
                 log_track(connected_track, "  -> ")
@@ -313,57 +343,116 @@ class RouterGen:
             track_net_name: str = track.GetNetname()
             track_end1 = (track.GetX(), track.GetY())
             track_end2 = (track.GetEndX(), track.GetEndY())
+            track_layer: str = track.GetLayerName()[0]
 
+            # First we perform tests to see if a new route will need to start
+            # Only later we fill in the route, that's important
+
+            # If net changes we start a new route, this is easier to follow in the routes, we could have also just switched nets
+            # Could just 'or' the tests, but for loggig purpose separating them
             if track_net_name != curr_net_name:
-                logger.debug("starting new layer because of net change")
-                start_new_route()
-            if (track_end1 != curr_pos and track_end2 != curr_pos):
-                logger.debug(f'starting new layer because of position - {curr_pos} != {track_end1}, {track_end2}')
+                logger.debug(f'starting new route because of net name {track_net_name} != {curr_net_name}')
                 start_new_route()
 
+            # If we need to jump position we start a new route, again, it is easier to follow, we could have used the X command to jump
+            # TODO: compare with tolerance instead of exact match
+            if track_end1 != curr_pos and track_end2 != curr_pos:
+                logger.debug(f'starting new route because of position - {curr_pos} != {track_end1}, {track_end2}')
+                start_new_route()
+
+            # End of tests for starting new routes
+
+            # TODO: compare with tolerance instead of exact match
+            if track_end1 != curr_pos and track_end2 != curr_pos:
+                # TODO: the test done here should not be done but rather use some temp variable from previous test which is the same
+                
+                # This is a new route (which was started above) due to no match in position from curr_pos to neither ends of the track 
+                # Will have to provide a starting position,
+                # BUT before that handle vias on the beginning of the track if available. Beginning is considering the try_to_start_from,
+                # which is the point at which track that lead here in the recursion ended and from which we start
+                # So need to place only vias if are on the try_to_start_from point or if try_to_start_from is None
+                
+                # if the track start point has a via, then place it first
+                connected_tracks = self.connectivity.GetConnectedTracks(track)
+                connected_track: pcbnew.PCB_TRACK
+                for connected_track in connected_tracks:
+                    track_type = connected_track.GetTypeDesc()
+                    if track_type == 'Via':
+                        if try_to_start_from is None or (try_to_start_from and pos_on_track_end(try_to_start_from, connected_track)):  # noqa: E501
+                            logger.debug("Calling process_track with via at the start of a track")
+                            process_track(connected_track)
+
+            # TODO: use some variable from comparison done above
             if track_net_name != curr_net_name:
                 route_set_net_cmd(track_net_name)
 
-            layer: str = track.GetLayerName()[0]
-            if layer != curr_layer:
-                route_set_layer_cmd(layer)
+            if track_layer != curr_layer:
+                route_set_layer_cmd(track_layer)
 
+            # TODO: compare with tolerance instead of exact match
+            # TODO: Can't Reuse tests above using some temp variable because via placement may have changed curr position, or not placed and it didn't change so need to test again
+            # If track ends don't match curr_position yet (either it matched initially, or at start may have set curr pos to match)
+            # We want to place the track in a continuous flow from the end of the track that triggered it as its connected track if that's the scenario
+            # So checking the options of which end to start from
             if track_end1 != curr_pos and track_end2 != curr_pos:
-                if not end_is_connected(track_end1[0], track_end1[1]):
+                logger.debug(f'Track that begins a route: end1: {track_end1} end2: {track_end2}: try_to_start_from: {try_to_start_from}, curr_pos: {curr_pos}')
+                # Start by continuous flow from calling track
+                # if not, then try to start from an end that isn't connected to anything (in case it is a starter track)
+                # TODO: compare with tolerance instead of exact match
+                if track_end1 == try_to_start_from:
+                    route_set_pos_cmd(track_end1)
+                elif track_end2 == try_to_start_from:
+                    route_set_pos_cmd(track_end2)
+                # TODO: compare with tolerance instead of exact match - change end_is_connected to achieve that
+                elif not end_is_connected(track_end1[0], track_end1[1]):
                     route_set_pos_cmd(track_end1)
                 else:
                     route_set_pos_cmd(track_end2)
 
+            # TODO: compare with tolerance instead of exact match - not sure needed, because here it's the track against its own positions
+            # Now complete the second end of the track
             if track_end1 == curr_pos:
                 route_set_pos_cmd(track_end2)
             elif track_end2 == curr_pos:
                 route_set_pos_cmd(track_end1)
             else:
-                assert True, "At this point one of the ends should be curr_pos"
+                assert True, "At this point one of the ends should have been curr_pos"
 
-            processed_tracks[track_uuid] = track
-
+            # Process connected tracks and vias, with an order that would yield nicest/shortest route
             connected_tracks = self.connectivity.GetConnectedTracks(track)
             connected_track: pcbnew.PCB_TRACK
 
-            # Processing all connected 'cias' and only after that the real' tracks for shorter routes in some cases (when via is not connected on other layer)
+            # TODO: verify that track_end_pos is not None (even add assert) - this is critical to the code that comes later and assumes curr_pos can't be None
+            # Even add code that changes the type to not support None and fail here if it is None
+            track_end_pos = curr_pos # record track end position before recursion
+
+            # Processing:
+            # 1. all connected 'vias' 
+            # 2. real' tracks 
+            # 3. connected tracks through Pads
+            # This order for for shorter routes in some cases (when via is not connected on other layer)
+            # TODO: think if pads last is appropriate. Also think about pads that are/aren't passthrough holes (since they are like vias a bit, but not exactly)
             for connected_track in connected_tracks:
                 track_type = connected_track.GetTypeDesc()
                 if track_type == 'Via':
+                    #  TODO: Do same as in track(see below), only vias that at on the end of the track, not the beginning
                     logger.debug("Calling process_track with via")
-                    process_track(connected_track)
+                    process_track(connected_track, track_end_pos)
+
             for connected_track in connected_tracks:
                 track_type = connected_track.GetTypeDesc()
-                if track_type == 'Track':
-                    process_track(connected_track)
+                if track_type == 'Track' and track_end_pos and pos_on_track_end(track_end_pos, connected_track):
+                    process_track(connected_track, track_end_pos)
 
             connected_pads = self.connectivity.GetConnectedPads(track)
             connected_pad: pcbnew.PAD
             for connected_pad in connected_pads:
-                pad_connected_tracks = self.connectivity.GetConnectedTracks(connected_pad)
-                pad_connected_track: pcbnew.PCB_TRACK
-                for pad_connected_track in pad_connected_tracks:
-                    process_track(pad_connected_track)
+                # TODO: test with tolerance
+                if track_end_pos and connected_pad.GetX() == track_end_pos[0] and connected_pad.GetY() ==track_end_pos[1]:
+                    pad_connected_tracks = self.connectivity.GetConnectedTracks(connected_pad)
+                    pad_connected_track: pcbnew.PCB_TRACK
+                    for pad_connected_track in pad_connected_tracks:
+                        process_track(pad_connected_track, track_end_pos)
 
 
 
