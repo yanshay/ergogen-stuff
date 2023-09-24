@@ -42,7 +42,6 @@ class ErgogenFrame(wx.Frame):
     yaml_txt: wx.TextCtrl
 
     def __init__(self):
-        logger.debug("In ErgogenFrame.__Init__")
         pcbnew_frame = wx.FindWindowByName("PcbFrame")
         super().__init__(pcbnew_frame)
         self.nets = {}
@@ -90,7 +89,7 @@ class ErgogenFrame(wx.Frame):
 
 
     def build_route_spec(self):
-        route_spec_sz = wx.StaticBoxSizer(wx.VERTICAL, self.panel, "Route Specification")
+        route_spec_sz = wx.StaticBoxSizer(wx.VERTICAL, self.panel, "Route Specifications")
         sb = route_spec_sz.GetStaticBox()
 
         self.collect_fp_tracks = wx.CheckBox(sb, label="Collect tracks connected to selected footprints")
@@ -131,7 +130,7 @@ class ErgogenFrame(wx.Frame):
         self.tab_size = wx.SpinCtrl(sb, value='2', style=wx.TE_READONLY)
         fp_name_label = wx.StaticText(sb, label="Footprint name:")
         self.fp_sec_name = wx.TextCtrl(sb, value="routes_fp_" + str(random.randint(100,999)))
-        filter_label = wx.StaticText(sb, label="Filter")
+        filter_label = wx.StaticText(sb, label="Filter:")
         self.filter = wx.TextCtrl(sb, value="true")
 
         routes_placeholders_sz.AddMany([(tab_size_label, 0, wx.CENTER | wx.LEFT, 10), 
@@ -166,7 +165,6 @@ class ErgogenFrame(wx.Frame):
         nets_map: dict[str, str] = {}
         for key in self.nets.keys():
             nets_map[key] = self.nets[key].GetValue()
-        logger.debug(f'get_nets_map: {str(nets_map)}')
         return nets_map
 
 
@@ -202,7 +200,6 @@ class ErgogenFrame(wx.Frame):
 
     def OnAnalyze(self, event):  # pyright: ignore
         router_gen = RouterGen()
-        logger.debug('OnAnalyze')
         sel_analysis: SelectionAnalysis = router_gen.get_selection_analysis()
         self.info_footprints.SetLabelText(str(sel_analysis.fp_count) + ' ' + (str(sel_analysis.fps) if len(sel_analysis.fps) != 0 else ''))
         self.info_tracks.SetLabelText(str(sel_analysis.tracks_count))
@@ -220,7 +217,6 @@ class ErgogenFrame(wx.Frame):
         self.set_nets(sel_analysis.nets)
         self.ref_fp.Clear()
         for fp in sel_analysis.fps:
-            logger.debug(f'Added {fp}')
             self.ref_fp.Append(fp)
         self.ref_fp.Value = sel_analysis.default_fp
         if sel_analysis.tracks_count == 0 and sel_analysis.vias_count == 0 and sel_analysis.fp_count != 0:
@@ -259,7 +255,6 @@ class ErgogenFrame(wx.Frame):
 
 
     def OnClose(self, event):
-        logger.debug("In ErgoFrame close")
         event.Skip()
 
 
