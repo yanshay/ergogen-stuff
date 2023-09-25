@@ -54,10 +54,11 @@ Note that if selection is changed, this has to be executed again before generati
 - **Informative section below the button** - contains a summary of the selected items. Note that these are NOT the elements that will be routed, only the initial selection driving it. 
 Also note that "unsupported" items will be ignored, it doesn't cause any issue selecting unsupported elements.
 
-### Route Specification
+### Route Specifications
 - **Collect tracks connected to selected footprints** - if this selection is checked then the plugin will follow tracks coming out of ALL selected footprint's pads.
 It is important in such case to disconnedt tracks that you don't want to be included in the routing of the PCB, especiall so not to accidentally route multuple keys insteaf of just one
 - **Include selected tracks and vias** - if checked the selected tracks and vias will be included in the routing. Sometimes it is technically easier to select areas for selecting footprings to be routed, but the selected tracks/vias are not of interest in the routes
+- Include locked tracks and vias - specify whether to include locked tracks and vias in the items to route. Note that the process of collecting tracks collects also through connection to locked items, but the items themselves are not included in the route. This is useful for iterating, see Tips and Best Practices section below.
 - **Reference Footprint** - Select the footprint which all routing will be relative to as explained above
 - **Place network names** - if checked the plugin will place explicit network reference for the Router footprint to include in the PCB tracks (this has some advantages, not all are clear at this time). For this to work it requires at this time a patched ErgoGen that include the following PR: https://github.com/ergogen/ergogen/pull/109 .
 When not checked, the route will show the net as a remark, this makes it easier to identify which route corresponds to what on the PCB, it is sometimes useful to know
@@ -72,3 +73,14 @@ When not checked, the route will show the net as a remark, this makes it easier 
 - **Copy to Clipboard** - Copies the yaml ready to paste into the ErgoGen config file with proper indentation. Note that this is not just a copy paste of the text in the edit but it goes through some indentation modifications for a single click paste into yaml.
 
 
+## Tips and (Best?) Practices
+- Think carefully how to organize the router-configs to separate routes in a way that creates managable/logical configs as well as support easy changes to the board without a complete rerouting.
+  
+  A few examples:
+  - Separate routing of the key diode related routes from the switch related routes, in case in the future it's required to move only the diodes. This way it won't be required to reroute the entire switch if the diode moves. Routes can still be in relation to the key point/location, but as a separate router footprint configuration
+  - Include a separate router-config for the vertical column connection between switches so these can be placed only on switches that are above other switches and not on the bottom row (using filters)
+  - Use a separate router-config for the connection of rows that have same stagger across columns, sometimes it is possible to split the row connection to the router-config part that is suitable for all rows and another part that is suitable for just some of the rows 
+  - For the thumb area, it is possible to use the same switch routes but connecting the switches among themselves can be separate, but not together with the connection of the thumb cluster to the rest of the board. This way moving the entire thumb cluster as a whole won't require re-routing
+
+- Use the capability of not routing locked routes to more easily add routes to an already somehwat routed board. Before starting to manually route, select all existing routes and vias on the board (or only those that may conflict), lock them, and only then start to route. This way it is possible to add new routes connected to existing routes and only the new ones will be included.
+- Remember to take advantage of ErgoGen filtering capabilities to route only some of the elements with specific routes
