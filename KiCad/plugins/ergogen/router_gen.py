@@ -121,7 +121,7 @@ class RouterGen:
             all_vias = {k: v for k,v in all_vias.items() if not v.IsLocked() }
 
         if len(all_tracks) == 0 and len(all_vias) == 0:
-            result = 'No tracks or vias to process resulted from Selection in KiCad and Route Specifications'
+            result = 'No tracks or vias resulted from Selection in KiCad and Route Specifications'
             logger.debug("@ Result: " + result)
             return result
 
@@ -320,13 +320,17 @@ class RouterGen:
                 nonlocal curr_pos
                 adjusted_x = decimal.Decimal(pos[0] - ref_x) / 1000000
                 adjusted_y = decimal.Decimal(pos[1] - ref_y) / 1000000
+
                 if orientation != 0:
                     cos = decimal.Decimal(math.cos(orientation/180.0*math.pi))
                     sin = decimal.Decimal(math.sin(orientation/180.0*math.pi))
                     oriented_x = adjusted_x*cos - adjusted_y*sin
                     oriented_y = adjusted_x*sin + adjusted_y*cos
-                    adjusted_x = round(oriented_x, 5).normalize()
-                    adjusted_y = round(oriented_y,5).normalize()
+                    adjusted_x = oriented_x
+                    adjusted_y = oriented_y
+
+                adjusted_x = round(adjusted_x, 5).normalize()
+                adjusted_y = round(adjusted_y,5).normalize()
 
                 logger.debug(f'Adding position ({str(adjusted_x)},{str(adjusted_y)})')
                 curr_route += f'({(adjusted_x)},{(adjusted_y)})'
