@@ -27,9 +27,12 @@ The plugin works base on a selection of elements done in the PCB.
 
 The routing is done relative to a footprint placed on the PCB. So if for example there is routing for a key, the routing generated using the Router footprint will be relative to the key. 
 If the key moves or rotates the routes will move together with the key.
+
 When generating the configuration yaml, a footprint has to be specified as a reference footprint and all routes are calculated relative to it at its Zero orientation.
 
 Therefore, when making a selection at least one footprint has to be selected. If several are selected one has to be chosen later as the reference footprint.
+
+**VERY IMPORTANT** : ErgoGen supports rotating and positioning in two stages - first at point definition and then at footprint definition. ErgoGen plugin can't currently tell if the reference-footprint rotation and position on the PCB is due to point rotation/shift or due to the additional footprint rotation/shift. It only sees the final rotation/position. It calculates the tracks/vias location relative to the footprint assuming that at build time it will be positioned in the same way as the reference footprint (same position and rotation). Therefore, if the reference footprint had additional rotation through footprint definition, it should be applied to the router footprint as well or the routes will be placed based on the posiion alone. 
 
 The general flow of the plugin usage is:
 
