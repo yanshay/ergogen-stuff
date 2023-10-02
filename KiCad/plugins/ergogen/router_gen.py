@@ -307,7 +307,7 @@ class RouterGen:
                     return
                 if curr_route != "":
                     logger.debug(f'Completed a route: {curr_route}')
-                    routes.append(f'"{curr_route}"{"" if place_nets or curr_net_name is None else ("  # net: " + str(get_mapped_net(curr_net_name)))}')
+                    routes.append(f'"{curr_route}"{"" if place_nets or curr_net_name is None or curr_net_name == "" else ("  # net: " + str(get_mapped_net(curr_net_name)))}')
                     curr_route = ""
                 logger.debug("------------------------------------------ Starting new route ----------------------------------------------------------------")
                 curr_net_name = None
