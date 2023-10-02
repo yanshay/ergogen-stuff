@@ -47,6 +47,7 @@ This footpring allows including the basic keys routing (and maybe more) into the
     routes: { type: "array", value: [] },
     via_size: { type: "number", value: 0.8 },
     via_drill: { type: "number", value: 0.4 },
+    locked: false,
   }
 ```
 
@@ -54,6 +55,7 @@ This footpring allows including the basic keys routing (and maybe more) into the
 - net - allows specifying a net for all routes in this footprint, which is limiting because for several routes of different networks that wou mean several router footprints. However, if 'no net' is supplied (default if net param not specified) then KiCad will fill in those missing nets when file is opened. 
 - `routes` - an array of routes based on the syntax described below, each stands by its own except they all share other params (net, ...)
 - `route` - allows adding a single route using same syntax, but on a single row in a more concise format and probably the common case
+- locked - generates the routes and vias as locked in KiCad - very useful for easy workflow
 
 ### Route Syntax
 A route is a string that describe how to route using one letter *commands* and positions. It follows to some extent KiCad key presses to make it easy to remember and use:

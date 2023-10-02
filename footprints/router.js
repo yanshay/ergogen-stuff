@@ -12,6 +12,7 @@ module.exports = {
     routes: { type: "array", value: [] },
     via_size: { type: "number", value: 0.8 },
     via_drill: { type: "number", value: 0.4 },
+    locked: false,
   },
 
   body: (p) => {
@@ -55,7 +56,7 @@ module.exports = {
           "Can't place segment before layer is set, use 'f' or 'b', to set starting layer"
         )
       }
-      return `(segment (start ${adjust_point(
+      return `(segment ${locked}(start ${adjust_point(
         start[0],
         start[1]
       )}) (end ${adjust_point(end[0], end[1])}) (width ${
@@ -70,7 +71,7 @@ module.exports = {
           "Can't place via when position is not set, use (x,y) to set position"
         )
       }
-      return `(via (at ${adjust_point(pos[0], pos[1])}) (size ${
+      return `(via ${locked}(at ${adjust_point(pos[0], pos[1])}) (size ${
         p.via_size
       }) (drill ${p.via_drill}) (layers "F.Cu" "B.Cu") (net ${net}))`
     }
@@ -166,6 +167,7 @@ module.exports = {
     }
 
     let combined_traces = ""
+    let locked = p.locked ? 'locked ' : ''
     if (p.route) {
       combined_traces += get_traces(p.route, p.net.index)
     }

@@ -75,8 +75,9 @@ class RouterGen:
         yaml += 0 * tab_size * " " + "footprints:\n"
         yaml += 1 * tab_size * " " + f'{fp_sec_name}:\n'
         yaml += 2 * tab_size * " " + "what: router\n"
-        yaml += 2 * tab_size * " " + f'where: {filter} # change filter as needed\n'
+        yaml += 2 * tab_size * " " + f'where: {filter}\n'
         yaml += 2 * tab_size * " " + "params:\n"
+        yaml += 3 * tab_size * " " + "locked: false\n"
         yaml += 3 * tab_size * " " + "routes:\n"
         for route in routes:
             yaml += 4 * tab_size * " " + '- ' + route + '\n'
