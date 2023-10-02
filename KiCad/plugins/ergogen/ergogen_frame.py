@@ -239,13 +239,20 @@ class ErgogenFrame(wx.Frame):
         self.yaml_txt.SetValue(INSTRUCTIONS)
 
     def OnCopyToClipboard(self, event):  # pyright: ignore
-        yaml_lines:list[str] = self.yaml_txt.GetValue().split('\n')
+        sel_str = self.yaml_txt.GetStringSelection()
+        value = '' 
+        if sel_str != '':
+            value = sel_str
+        else:
+            value = self.yaml_txt.GetValue()
+
+        yaml_lines:list[str] = value.split('\n')
         if len(yaml_lines) > 0:
             if yaml_lines[0] == "footprints:":
                 yaml_lines.pop(0)
             for idx, line in enumerate(yaml_lines):
                 yaml_lines[idx] = self.tab_size.GetValue()*2*' '+line
-        txt_to_copy = "\n".join(yaml_lines)
+        txt_to_copy = "\n".join(yaml_lines) +"\n"
 
         if wx.TheClipboard.IsOpened():
             wx.TheClipboard.Close()
