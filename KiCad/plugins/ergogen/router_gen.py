@@ -40,6 +40,51 @@ class RouterGen:
         self.board = pcbnew.GetBoard()
         self.connectivity = self.board.GetConnectivity()
 
+    def lock_track_vias(self):
+        board: pcbnew.BOARD = pcbnew.GetBoard()
+        tracks = board.GetTracks()
+        track: pcbnew.PCB_TRACK
+        for track in tracks:
+            track.SetLocked(True)
+        pcbnew.Refresh()
+
+    def select_unlocked_tracks_vias(self):
+        curr_sel = pcbnew.GetCurrentSelection()
+        item: pcbnew.EDA_ITEM
+        for item in curr_sel:
+            item.ClearSelected()
+        board: pcbnew.BOARD = pcbnew.GetBoard()
+        tracks = board.GetTracks()
+        track: pcbnew.PCB_TRACK
+        for track in tracks:
+            if not track.IsLocked():
+                track.SetSelected()
+        pcbnew.Refresh()
+
+    def select_connected_footprints(self):
+        board: pcbnew.BOARD = pcbnew.GetBoard()
+        selected_items = pcbnew.GetCurrentSelection()
+        conn: pcbnew.CONNECTIVITY_DATA = board.GetConnectivity()
+        for item in selected_items:
+            item_type = item.GetTypeDesc()
+            if item_type == 'Track' or item_type == 'Via':
+                pads: pcbnew.PADS = conn.GetConnectedPads(item)
+                pad: pcbnew.PAD
+                for pad in  pads:
+                    fp: pcbnew.FOOTPRINT
+                    fp = pad.GetParentFootprint()
+                    if fp is not None:
+                        fp.SetSelected()
+        pcbnew.Refresh()
+
+    def select_all_footprints(self):
+        board: pcbnew.BOARD = pcbnew.GetBoard()
+        fps = board.GetFootprints()
+        fp: pcbnew.FOOTPRINT
+        for fp in fps:
+            fp.SetSelected()
+        pcbnew.Refresh()
+
     def get_selection_analysis(self) -> SelectionAnalysis:
         sel_analysis = SelectionAnalysis()
         selected_items = pcbnew.GetCurrentSelection()
@@ -56,9 +101,9 @@ class RouterGen:
                 if fp.GetArea() > largest_fp_area:
                     sel_analysis.default_fp = fp.GetReferenceAsString()
                     largest_fp_area = fp.GetArea()
-                for pad in fp.Pads():
-                    if self.connectivity.GetConnectedTracks(pad).size() != 0:
-                        sel_analysis.nets.add(pad.GetNetname())
+                # for pad in fp.Pads():
+                #     if self.connectivity.GetConnectedTracks(pad).size() != 0:
+                #         sel_analysis.nets.add(pad.GetNetname())
             elif item_type == 'Track':
                 sel_analysis.tracks_count += 1
                 track: pcbnew.PCB_TRACK = item.Cast()

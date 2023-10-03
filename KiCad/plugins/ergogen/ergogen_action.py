@@ -31,7 +31,6 @@ class ErgogenPluginAction(pcbnew.ActionPlugin):
         self.window.Bind(wx.EVT_CLOSE, self.OnWindowClose)
 
     def OnWindowClose(self, event):
-        logger.debug("Ergogen Frame was closed, marking in Ergogen Action")
         self.window = None
         event.Skip()
 

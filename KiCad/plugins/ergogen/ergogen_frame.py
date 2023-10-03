@@ -18,6 +18,7 @@ INSTRUCTIONS = '''Instructions
 
 class ErgogenFrame(wx.Frame):
 
+    ontop: bool
     panel: wx.Panel
 
     info_footprints: wx.StaticText
@@ -45,10 +46,48 @@ class ErgogenFrame(wx.Frame):
         pcbnew_frame = wx.FindWindowByName("PcbFrame")
         super().__init__(pcbnew_frame)
         self.nets = {}
+        self.ontop = False
         self.init_ui()
 
-    def init_ui(self):
+        # Make window top most while Kicad Window is Active (and working well on Mac)
+        pcbnew_frame.Bind(wx.EVT_ACTIVATE, self.OnParentActivate)
+        self.Bind(wx.EVT_ACTIVATE, self.OnSelfActivate)
 
+    def OnParentActivate(self, evt):
+        if not self.ontop:
+            return
+        if evt.GetActive():
+            self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_FLOAT_ON_PARENT)
+        else:
+            if (wx.GetActiveWindow() != self):
+                self.SetWindowStyle(self.GetWindowStyle() & ~wx.FRAME_FLOAT_ON_PARENT)
+                self.Refresh()
+                # self.Lower()
+
+    def OnSelfActivate(self, evt):
+        if not self.ontop:
+            return
+        if evt.GetActive():
+            self.SetWindowStyle(self.GetWindowStyle() | wx.FRAME_FLOAT_ON_PARENT)
+        else:
+            self.SetWindowStyle(self.GetWindowStyle() & ~wx.FRAME_FLOAT_ON_PARENT)
+            self.Refresh()
+            # self.Lower()
+
+    def OnResize(self, evt):
+        evt.Skip()
+        x = self.GetRect().GetWidth()-self.ontop_btn.GetSize().GetWidth() - 10
+        self.ontop_btn.SetPosition(wx.Point(x,0))
+
+    def OnOnTopToggle(self, evt):
+            self.ontop = self.ontop_btn.GetValue() 
+            if self.ontop:
+                pass
+            else:
+                self.SetWindowStyle(self.GetWindowStyle() & ~wx.FRAME_FLOAT_ON_PARENT)
+
+
+    def init_ui(self):
         self.SetTitle("Ergogen Kicad Plugin")
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         self.SetSize(600, 900)
@@ -59,34 +98,55 @@ class ErgogenFrame(wx.Frame):
         self.build_route_spec()
         self.build_execution()
 
+        self.ontop_btn = wx.ToggleButton(self.panel, wx.ID_ANY, label="Stay On Top")
+        self.ontop_btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnOnTopToggle)
+
         self.panel.SetSizer(self.main_sz)
+        self.Bind(wx.EVT_SIZE, self.OnResize)
 
     def build_sel_analysis(self):
-
         sel_analysis_sz = wx.StaticBoxSizer(wx.VERTICAL, self.panel, "Selection Analysis")
-        sb = sel_analysis_sz.GetStaticBox()
-        analyze_btn = wx.Button(sb, wx.ID_ANY, label="Analyze Selection")
+        sbl = sel_analysis_sz.GetStaticBox()
+        analyze_btn = wx.Button(sbl, wx.ID_ANY, label="Analyze Selection")
+        analyze_btn.Bind(wx.EVT_BUTTON, self.OnAnalyze)
         sel_analysis_sz.Add(analyze_btn, flag=wx.EXPAND)
 
         info_sz = wx.FlexGridSizer(2, 5, 5)
-        self.info_footprints = wx.StaticText(sb, label="?")
-        self.info_tracks = wx.StaticText(sb, label="?")
-        self.info_vias = wx.StaticText(sb, label="?")
-        self.info_nets = wx.StaticText(sb, label="?")
-        self.info_unsupported = wx.StaticText(sb, label="?")
+        self.info_footprints = wx.StaticText(sbl, label="?")
+        self.info_tracks = wx.StaticText(sbl, label="?")
+        self.info_vias = wx.StaticText(sbl, label="?")
+        self.info_nets = wx.StaticText(sbl, label="?")
+        self.info_unsupported = wx.StaticText(sbl, label="?")
 
-        info_sz.AddMany([wx.StaticText(sb, label="Footprints:"), self.info_footprints,
-                         wx.StaticText(sb, label="Tracks:"), self.info_tracks,
-                         wx.StaticText(sb, label="Vias:"), self.info_vias,
-                         wx.StaticText(sb, label="Nets:"), self.info_nets,
-                         wx.StaticText(sb, label="Unsupported:"), self.info_unsupported
+        info_sz.AddMany([wx.StaticText(sbl, label="Footprints:"), self.info_footprints,
+                         wx.StaticText(sbl, label="Tracks:"), self.info_tracks,
+                         wx.StaticText(sbl, label="Vias:"), self.info_vias,
+                         wx.StaticText(sbl, label="Nets:"), self.info_nets,
+                         wx.StaticText(sbl, label="Unsupported:"), self.info_unsupported
                          ])
         sel_analysis_sz.Add(info_sz, flag=wx.ALL, border=10)
 
-        self.main_sz.Add(sel_analysis_sz, flag=wx.ALL | wx.EXPAND, border=10)
-        # self.main_sz.Fit(self)
-        analyze_btn.Bind(wx.EVT_BUTTON, self.OnAnalyze)
+        sel_tools_sz = wx.StaticBoxSizer(wx.VERTICAL, self.panel, "Selection Tools")
+        sbr = sel_tools_sz.GetStaticBox()
 
+        lock_all_tracks_vias_btn = wx.Button(sbr, wx.ID_ANY, label="Lock all Tracks/Vias")
+        lock_all_tracks_vias_btn.Bind(wx.EVT_BUTTON, self.OnLockTracksVias)
+        select_unlocked_tracks_vias_btn = wx.Button(sbr, wx.ID_ANY, label="Select Unlocked Tracks/Vias")
+        select_unlocked_tracks_vias_btn.Bind(wx.EVT_BUTTON, self.OnSelectUnlockedTracksVias)
+        select_connected_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select Connected Footprints(to vias)")
+        select_connected_footprints_btn.Bind(wx.EVT_BUTTON, self.OnSelectConnectedFootprints)
+        select_all_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select ALL Footprints(to vias)")
+        select_all_footprints_btn.Bind(wx.EVT_BUTTON, self.OnSelectAllFootprints)
+        sel_tools_sz.Add(lock_all_tracks_vias_btn, flag=wx.EXPAND)
+        sel_tools_sz.Add(select_unlocked_tracks_vias_btn, flag= wx.TOP | wx.EXPAND, border=10)
+        sel_tools_sz.Add(select_connected_footprints_btn, flag= wx.TOP | wx.EXPAND, border=10)
+        sel_tools_sz.Add(select_all_footprints_btn, flag= wx.TOP | wx.EXPAND, border=10)
+
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        hsizer.Add(sel_analysis_sz, proportion=1, flag=wx.EXPAND)
+        hsizer.Add(sel_tools_sz, proportion=0, flag=wx.LEFT | wx.EXPAND, border=10)
+
+        self.main_sz.Add(hsizer, flag=wx.ALL | wx.EXPAND, border=10)
 
     def build_route_spec(self):
         route_spec_sz = wx.StaticBoxSizer(wx.VERTICAL, self.panel, "Route Specifications")
@@ -198,6 +258,29 @@ class ErgogenFrame(wx.Frame):
         self.main_sz.Add(execution_sz, 1, flag=wx.ALL | wx.EXPAND, border=10)
 
 
+    def OnLockTracksVias(self, event):  # pyright: ignore
+        router_gen = RouterGen()
+        router_gen.lock_track_vias()
+
+    def OnSelectUnlockedTracksVias(self, event):  # pyright: ignore
+        router_gen = RouterGen()
+        router_gen.select_unlocked_tracks_vias()
+        self.collect_fp_tracks.SetValue(False)
+        self.include_selected_tracks.SetValue(True)
+        self.include_locked_tracks_vias.SetValue(False)
+        self.OnAnalyze(None)
+
+    def OnSelectConnectedFootprints(self, event):  # pyright: ignore
+        router_gen = RouterGen()
+        router_gen.select_connected_footprints()
+        self.OnAnalyze(None)
+
+    def OnSelectAllFootprints(self, event):  # pyright: ignore
+        router_gen = RouterGen()
+        router_gen.select_all_footprints()
+        self.collect_fp_tracks.SetValue(False)
+        self.OnAnalyze(None)
+
     def OnAnalyze(self, event):  # pyright: ignore
         router_gen = RouterGen()
         sel_analysis: SelectionAnalysis = router_gen.get_selection_analysis()
@@ -263,10 +346,3 @@ class ErgogenFrame(wx.Frame):
 
     def OnClose(self, event):
         event.Skip()
-
-
-# app = wx.App()
-# window = ErgogenFrame()
-# window.Show()
-#
-# app.MainLoop()
