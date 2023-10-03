@@ -88,7 +88,7 @@ class ErgogenFrame(wx.Frame):
 
 
     def init_ui(self):
-        self.SetTitle("Ergogen Kicad Plugin")
+        self.SetTitle("Ergogen KiCad Plugin")
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         self.SetSize(600, 900)
         self.panel = wx.Panel(self)
@@ -133,9 +133,9 @@ class ErgogenFrame(wx.Frame):
         lock_all_tracks_vias_btn.Bind(wx.EVT_BUTTON, self.OnLockTracksVias)
         select_unlocked_tracks_vias_btn = wx.Button(sbr, wx.ID_ANY, label="Select Unlocked Tracks/Vias")
         select_unlocked_tracks_vias_btn.Bind(wx.EVT_BUTTON, self.OnSelectUnlockedTracksVias)
-        select_connected_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select Connected Footprints(to vias)")
+        select_connected_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select Connected Footprints(to Tracks/Vias)")
         select_connected_footprints_btn.Bind(wx.EVT_BUTTON, self.OnSelectConnectedFootprints)
-        select_all_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select ALL Footprints(to vias)")
+        select_all_footprints_btn = wx.Button(sbr, wx.ID_ANY, label="Select ALL Footprints")
         select_all_footprints_btn.Bind(wx.EVT_BUTTON, self.OnSelectAllFootprints)
         sel_tools_sz.Add(lock_all_tracks_vias_btn, flag=wx.EXPAND)
         sel_tools_sz.Add(select_unlocked_tracks_vias_btn, flag= wx.TOP | wx.EXPAND, border=10)
@@ -172,7 +172,7 @@ class ErgogenFrame(wx.Frame):
         route_spec_sz.Add(combo_sz, 0, flag=wx.EXPAND | wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
 
-        self.place_nets = wx.CheckBox(sb, label="Place network names (disable with unpatched ErgoGen at this time)")
+        self.place_nets = wx.CheckBox(sb, label="(USE ONLY WITH PATCHED Ergogen) Place network names")
         self.place_nets.SetValue(False)
         route_spec_sz.Add(self.place_nets, flag=wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
