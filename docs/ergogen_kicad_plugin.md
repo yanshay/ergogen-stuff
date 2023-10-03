@@ -49,6 +49,9 @@ The general flow of the plugin usage is:
 
 ## Detailed UI Description
 
+### Stay On Top button
+Sometimes it is convinient to have the plugin window stay on top of KiCad window. Setting the `Stay On Top` as active by pressing this button switches to that mode. Pressing the button again returns to normal behavior. This was tested to work on Mac.
+
 ### Selection Analysis Selection
 - **Analyze Selection Button** - pressing this button triggers the plugin to go through the selection and fetch relevant information.
 Some of it is displayed right below the button for informative purpose only.
@@ -56,6 +59,12 @@ This also alters some of the settings in the Route Specification section.
 Note that if selection is changed, this has to be executed again before generating routes to avoid routing mistakes.
 - **Informative section below the button** - contains a summary of the selected items. Note that these are NOT the elements that will be routed, only the initial selection driving it. 
 Also note that "unsupported" items will be ignored, it doesn't cause any issue selecting unsupported elements.
+
+### Selection Tools
+The below tools are shortcuts to common KiCad selection patterns that are very helpful for the workflow when using ErgoGen KiCad plugin and the router footprint for routing the board. For more details for a productive workflow see below.
+- Lock all Tracks/Vias - set all tracks and vias as locked
+- Select Unlocked Tracks/Vias - selects all tracks and vias that aren't locked
+- Select Connected Footprints (to Tracks/Vias) - **ADDS** to the selection the footprints that are directly connected to the selected tracks/vias
 
 ### Route Specifications
 - **Collect tracks connected to selected footprints** - if this selection is checked then the plugin will follow tracks coming out of ALL selected footprint's pads.
@@ -85,5 +94,19 @@ When not checked, the route will show the net as a remark, this makes it easier 
   - Use a separate router-config for the connection of rows that have same stagger across columns, sometimes it is possible to split the row connection to the router-config part that is suitable for all rows and another part that is suitable for just some of the rows 
   - For the thumb area, it is possible to use the same switch routes but connecting the switches among themselves can be separate, but not together with the connection of the thumb cluster to the rest of the board. This way moving the entire thumb cluster as a whole won't require re-routing
 
-- Use the capability of not routing locked routes to more easily add routes to an already somehwat routed board. Before starting to manually route, select all existing routes and vias on the board (or only those that may conflict), lock them, and only then start to route. This way it is possible to add new routes connected to existing routes and only the new ones will be included.
 - Remember to take advantage of ErgoGen filtering capabilities to route only some of the elements with specific routes
+
+### Workflow using KiCad Lock mechanism
+It is very convinient to use KiCad locking of tracks/vias for a productive workflow:
+1. At any given routing session work on a single router footprint config
+1. Set the `locked` param of all router sections except the one being worked on to `true`
+1. Route to generate config using the KiCad plugin
+1. Add to ergogen config file (with `locked` param of that section as false)
+1. Generate the pcb using ergogen and reopen it
+1. Change/enhance/remove Routes, basically jump back to step 3 and iterate until happy with the Results
+1. Once satisfies with the results, set the locked property of that section to true and move to the next one
+
+In the same way it's possible to edit an existing configuration, just set the router footprint you want to edit to `locked: false`, all others to true and iterate on editing it until done.
+
+## Troublesho ting
+KiCad plugin is able to output detailed logs, in the helper.py just need to set the level of logs from WARN to DEBUG and a file named ergogen.log will be created in the ergogen plugin location containing the logs.
