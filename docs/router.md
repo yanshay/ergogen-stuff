@@ -7,6 +7,8 @@ The Router footprint provides basic routing capabilities including
 It is useful especially since there are tens of keys per keyboard which have exact same routing and whenever a change needs to be made to ErgoGen config, w/o any tricks, rerouting is required.
 This footpring allows including the basic keys routing (and maybe more) into the ErgoGen config.
 
+Most important: this footprint one piece of a more complete Ergogen routing solution that includes also the [Ergogen KiCad plugin](ergogen_kicad_plugin.md)
+
 ## Example
 ```
     footprints:
