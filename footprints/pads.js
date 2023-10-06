@@ -14,6 +14,7 @@
 // 
 // @yanshay improvements:
 // - Added pad_type & drill_size to specify throughhole type pad
+// - Changed mirror param to mirror_nets, mirror is a reserved word in ergogen
 
 module.exports = {
     params: {
