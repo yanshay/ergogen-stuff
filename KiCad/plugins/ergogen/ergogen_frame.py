@@ -172,7 +172,7 @@ class ErgogenFrame(wx.Frame):
         route_spec_sz.Add(combo_sz, 0, flag=wx.EXPAND | wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
 
-        self.place_nets = wx.CheckBox(sb, label="(USE ONLY WITH PATCHED Ergogen) Place network names")
+        self.place_nets = wx.CheckBox(sb, label="(USE ONLY WITH PATCHED Ergogen) Place network names)")
         self.place_nets.SetValue(False)
         route_spec_sz.Add(self.place_nets, flag=wx.LEFT, border=10)
         route_spec_sz.AddSpacer(5)
