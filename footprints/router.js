@@ -1,7 +1,10 @@
-// Router
-// Version: 0.1
+// Router Footprint for ErgoGen
+// Version: 1.0
+// Designed and Implemented by @yanshay
+// https://github.com/yanshay/ergogen-stuff 
+// This file is under /blob/main/footprints/router.js
 
-// Snippets of code used here were taken from https://github.com/infused-kim/kb_ergogen_fp (adjust_oint)
+// Snippets of code used here were taken from https://github.com/infused-kim/kb_ergogen_fp and modified (adjust_point)
 // Credits goes to Github infused-kim, Thanks!
 
 module.exports = {
