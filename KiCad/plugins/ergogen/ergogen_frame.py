@@ -250,7 +250,8 @@ class ErgogenFrame(wx.Frame):
         font: wx.Font = self.GetFont()
         font.SetFamily(wx.FONTFAMILY_TELETYPE)
         self.yaml_txt = wx.TextCtrl(sb, value=INSTRUCTIONS, style=wx.TE_MULTILINE)
-        self.yaml_txt.OSXDisableAllSmartSubstitutions()
+        if '__WXMAC__' in wx.PlatformInfo:
+            self.yaml_txt.OSXDisableAllSmartSubstitutions()
         self.yaml_txt.SetSizeHints(0, 800)
         self.yaml_txt.SetFont(font)
         execution_sz.Add(self.yaml_txt, flag=wx.TOP | wx.EXPAND, border=5)
